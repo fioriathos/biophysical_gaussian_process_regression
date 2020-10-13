@@ -1,4 +1,8 @@
 import numpy as np
+from datetime import datetime
+from multiprocessing import  Pool, Process
+from pathos.multiprocessing import Pool as  path_pool
+from numba import jit
 import mpmath
 from numpy import sqrt as Sqrt
 from numpy import pi as Pi
@@ -121,11 +125,80 @@ def posterior(y,m,C,sx2,sg2):
     M = np.linalg.inv(C[:2,:2]+D)
     K = C[:2,:]
     return m+K.T@M@(y-m[:2,:]), C-K.T@M@K
-############################################################################
-############################################################################
-########################Multi measures cov##################################
-############################################################################
-############################################################################
+
+
+
+def\
+posterior_likelihood(df,m,C,ml,gl,sl2,mq,gq,sq2,b,sx2,sg2,sdx2,sdg2,likelihood=False,xlabel='log_length_um',glabel='gfp_nb',tlabel='time_min',cell_lab='cell_id'):
+    """df must be connected in genealogy, time ordered and
+    maximun 1 division apart i.e. mother daugther relationship """
+    post_mean=[];post_cov=[];log_lik=0
+    Y =\
+    df[['{}'.format(xlabel),'{}'.format(glabel),'{}'.format(tlabel),'{}'.format(cell_lab)]].values
+    XG = Y[:,:2];T=Y[:,2:3];ID=Y[:,3:4]
+    T = T-T[0,0]
+    for i in range(T.shape[0]):
+        if i==0:nm=m;nC=C
+        if i!=0 and ID[i,0]!=ID[i-1,0]:
+            # If cell division happen
+            nm,nC = division(nm,nC,sdx2,sdg2)
+        y = Y[i:i+1,:].T
+        # COMPUTE LIKELIHOOD
+        if likelihood:
+            log_lik+=log_likelihood(y,nm,nC,sx2,sg2)
+        #COMPUTE POSTERIOR
+        nm,nC = posterior(y,nm,nC,sx2,sg2)
+        post_mean.append(nm.reshape(-1))
+        post_cov.append(np.diag(nC).reshape(-1))
+        # NEXT TIME POINT PRIOR NO DIVISION
+        dt = T[i+1,0]-T[i,0]
+        nm,nC = mean_cov_model(nm,nC,dt,ml,gl,sl2,mq,gq,sq2,b)
+    return post_mean, post_cov,log_lik
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
 def mean(t,m,C,ml,gl,sl2,mq,gq,sq2,b):
     nm = np.zeros((4,1))
     bx=m[0,0]; bg=m[1,0]; bl=m[2,0]; bq=m[3,0]
@@ -210,7 +283,7 @@ def cov_gg2(t,s,m,C,ml,gl,sl2,mq,gq,sq2,b):
     m2gtz0 = (Cgg+bg**2)/Exp(b*(t+s)) +quad(mean_gtz0_part1, 0, t)[0] +quad(mean_gtz0_part1, 0, s)[0] +\
               dblquad(mean_gtz0_part2, 0, t, lambda x: 0, lambda x: s)[0]
     return vgtz0 +m2gtz0-mgmg
-def likelihood_posteriori_1cc(Y,m,C,ml,gl,sl2,mq,gq,sq2,b,sx2,sg2,posterior=False,likelihood=False):
+def likelihood_posteriori_1cc_full(Y,m,C,ml,gl,sl2,mq,gq,sq2,b,sx2,sg2,posterior,likelihood,nproc):
     """Compute the likelihood or posterior over 1cc (no cell division). The
     vector Y must be in the form Y=[log_length,gfp,time] of shape (n,3) time
     ordered"""
@@ -219,31 +292,27 @@ def likelihood_posteriori_1cc(Y,m,C,ml,gl,sl2,mq,gq,sq2,b,sx2,sg2,posterior=Fals
     ##########################
     def mean_(t):
         return mean(t,m,C,ml,gl,sl2,mq,gq,sq2,b)
-    @np.vectorize
-    def covxx(t,s):
-        return cov_xx2(t,s,m,C,ml,gl,sl2,mq,gq,sq2,b)
-    @np.vectorize
-    def covxg(t,s):
-        return cov_xg2(t,s,m,C,ml,gl,sl2,mq,gq,sq2,b)
-    @np.vectorize
-    def covgg(t,s):
-        return cov_gg2(t,s,m,C,ml,gl,sl2,mq,gq,sq2,b)
-    @np.vectorize
-    def covxl(t,s):
-        return cov_xl2(t,s,m,C,ml,gl,sl2,mq,gq,sq2,b)
-    @np.vectorize
-    def covxq(t,s):
-        return cov_xq2(t,s,m,C,ml,gl,sl2,mq,gq,sq2,b)
-    @np.vectorize
-    def covgl(t,s):
-        return cov_gl2(t,s,m,C,ml,gl,sl2,mq,gq,sq2,b)
-    @np.vectorize
-    def covgq(t,s):
-        return cov_gq2(t,s,m,C,ml,gl,sl2,mq,gq,sq2,b)
+    def covxx(two_time):
+        return cov_xx2(two_time[0],two_time[1],m,C,ml,gl,sl2,mq,gq,sq2,b)
+    def covxg(two_time):
+        return cov_xg2(two_time[0],two_time[1],m,C,ml,gl,sl2,mq,gq,sq2,b)
+    def covgg(two_time):
+        return cov_gg2(two_time[0],two_time[1],m,C,ml,gl,sl2,mq,gq,sq2,b)
+    def covxl(two_time):
+        return cov_xl2(two_time[0],two_time[1],m,C,ml,gl,sl2,mq,gq,sq2,b)
+    def covxq(two_time):
+        return cov_xq2(two_time[0],two_time[1],m,C,ml,gl,sl2,mq,gq,sq2,b)
+    def covgl(two_time):
+        return cov_gl2(two_time[0],two_time[1],m,C,ml,gl,sl2,mq,gq,sq2,b)
+    def covgq(two_time):
+        return cov_gq2(two_time[0],two_time[1],m,C,ml,gl,sl2,mq,gq,sq2,b)
     ##########################
     ######      MAIN      ####
     ##########################
     assert likelihood==True or posterior==True,"compute one of the two"
+    #p1 = Pool(nproc)
+    p = path_pool(nproc)
+    p1=p
     X = Y[:,:1]; G=Y[:,1:2];T=Y[:,2:3]-Y[0,2]
     # ERROR MATRIX
     if type(sx2) is float:
@@ -257,44 +326,125 @@ def likelihood_posteriori_1cc(Y,m,C,ml,gl,sl2,mq,gq,sq2,b,sx2,sg2,posterior=Fals
     Ds = np.concatenate((Dx,np.zeros_like(Dx)),axis=1)
     Di = np.concatenate((np.zeros_like(Dx),Dg),axis=1)
     D = np.concatenate((Ds,Di),axis=0)
-    # Compute useful matrices
+    # COMPUTE MEAN VECTOR AND SOME  MATRICES
     s,t = np.meshgrid(T,T)# t = [[0,0],[1,1]]; s = [[0,1],[0,1]]
-    Mt = list(map(mean_,T))
-    Kxx = covxx(t,s); Kxg=covxg(t,s);Kgg=covgg(t,s)
-    Kxl = covxl(t,s)
-    Kxq = covxq(t,s)
-    Kgl = covgl(t,s)
-    Kgq = covgq(t,s)
-    # MEAN
+    Mt = p.map(mean_,T)
+    # Compute Covgg in parallel way
+    # Do not vecotrize so reduce number of computations
+    upper_time=[]
+    for k in T:
+        for j in T:
+            if j>=k:
+                upper_time.append((k,j))
+        else:continue
+    tmp_kxx = p1.map(covxx,upper_time)
+    tmp_kxg = p1.map(covxg,upper_time)
+    tmp_kxl = p1.map(covxl,upper_time)
+    tmp_kxq = p1.map(covxq,upper_time)
+    tmp_kgg = p1.map(covgg,upper_time)
+    tmp_kgl = p1.map(covgl,upper_time)
+    tmp_kgq = p1.map(covgq,upper_time)
+    Kgg,Kxx,Kxg,Kxl,Kxq,Kgl,Kgq  = [np.zeros((T.shape[0],T.shape[0]))]*7
+    s=0
+    for k,_ in enumerate(T):
+        for j,_ in enumerate(T):
+            if j>=k:
+                Kxx[k,j] = tmp_kxx[s]
+                Kxg[k,j] = tmp_kxg[s]
+                Kxl[k,j] = tmp_kxl[s]
+                Kxq[k,j] = tmp_kxq[s]
+                Kgg[k,j] = tmp_kgg[s]
+                Kgl[k,j] = tmp_kgl[s]
+                Kgq[k,j] = tmp_kgq[s]
+                s+=1
+            else:continue
+    myfunc = lambda K: K + np.triu(K,1).T
+    Kgg,Kxx,Kxg,Kxl,Kxq,Kgl,Kgq = list(map(myfunc,[Kgg,Kxx,Kxg,Kxl,Kxq,Kgl,Kgq]))
+    # MEAN FUNCTION COMPUTATION
     XmM = np.vstack([x-m[0] for x,m in zip(X,Mt)])
     GmM = np.vstack([g-m[1] for g,m in zip(G,Mt)])
     Vm = np.concatenate((XmM,GmM),axis=0)
-    # K0
+    # K0 MATRIX AND INVERSE COMPUTATION
     K0s = np.concatenate((Kxx,Kxg),axis=1)
     K0i = np.concatenate((Kxg.T,Kgg),axis=1)
     K0 = np.concatenate((K0s,K0i),axis=0)
+    print("inversion")
+    start=datetime.now()
     K0Di = np.linalg.inv(K0+D)
     K0DiVm = K0Di@Vm
-    # Ktil (list for t*=0,1,..,n)
-    KtilT =[]; C_t=[]
-    for i in range(Kxx.shape[1]):
+    #K TILDE MATRIX COMPUTATION
+    print(datetime.now()-start)
+    def KtilT_C_t(i):
+        """Find Ktilde and C for time i"""
         kll = cov_ll2(T[i,0],T[i,0],m,C,ml,gl,sl2,mq,gq,sq2,b)
         klq = cov_lq2(T[i,0],T[i,0],m,C,ml,gl,sl2,mq,gq,sq2,b)
         kqq = cov_qq2(T[i,0],T[i,0],m,C,ml,gl,sl2,mq,gq,sq2,b)
         KtilTl=np.concatenate((Kxx[:,i:i+1].T,Kxg[:,i:i+1].T,Kxl[:,i:i+1].T,Kxq[:,i:i+1].T),axis=0)
         KtilTr=np.concatenate((Kxg.T[:,i:i+1].T,Kgg[:,i:i+1].T,Kgl[:,i:i+1].T,Kgq[:,i:i+1].T),axis=0)
-        KtilT.append(np.concatenate((KtilTl,KtilTr),axis=1))
-        C_t.append(np.array([[Kxx[i,i],Kxg[i,i],Kxl[i,i],Kxq[i,i]],\
+        KtilT = np.concatenate((KtilTl,KtilTr),axis=1)
+        C_t = np.array([[Kxx[i,i],Kxg[i,i],Kxl[i,i],Kxq[i,i]],\
                            [Kxg[i,i],Kgg[i,i],Kgl[i,i],Kgq[i,i]],\
                            [Kxl[i,i],Kgl[i,i],kll,klq],\
                            [Kxq[i,i],Kgq[i,i],klq,kqq],\
-                          ]))
+                          ])
+        return KtilT,C_t
     # COMPUTE POSTERIOR
+    def posterior(Mt,C,KtilT):
+        return Mt+KtilT@K0DiVm, C-KtilT@K0Di@KtilT.T
     if posterior:
-        def posterior(Mt,C,KtilT):
-            return Mt+KtilT@K0DiVm, C-KtilT@K0Di@KtilT.T
-        POST = [ posterior(m,c,ktilT) for m,c,ktilT in zip(Mt,C_t,KtilT)]
+        # Ktil (list for t*=0,1,..,n)
+        KtilT =[]; C_t=[]
+        print("Ktild")
+        start=datetime.now()
+        tmp = p.map(KtilT_C_t,range(Kxx.shape[1]))
+        print(datetime.now()-start)
+        my_function = lambda x: posterior(x[0],x[1][1],x[1][0])
+        print("post")
+        start=datetime.now()
+        POST = p.map(my_function,zip(Mt,tmp))
+        print(datetime.now()-start)
+        #POST = [ posterior(m,c,ktilT) for m,c,ktilT in zip(Mt,C_t,KtilT)]
+        # We also return POST[-1] for the next cell computation
+        return POST,POST[-1]
     # COMPUTE LIKELIHOOD
     if likelihood:
         LIK = -1/2*Vm.T@K0DiVm-1/2*np.linalg.det(K0DiVm)-2*np.log((2*Pi))
-    return Mt,Vm,K0,D,KtilT,C_t,POST
+        # Compute last cell mean and cov
+        ktilt,ct = KtilT_C_t(Kxx.shape[1]-1)
+        POSTm1 = posterior(Mt[-1],ct,ktilt)
+        # We also return POSTm1 for next cell computation
+        return LIK, POSTm1
+def full_likelihood_posterior(df,m,C,ml,gl,sl2,mq,gq,sq2,b,sx2,sg2,sdx2,sdg2,posterior\
+                          ,likelihood,nproc=4,xlabel='log_length_um',\
+                          glabel='gfp_nb',tlabel='time_min',cell_lab='cell_id'):
+    """Y[x,g,time,cellid] Y must be connected in genealogy, time ordered and
+    maximun 1 division apart i.e. mother daugther relationship """
+    post=[];log_lik=0
+    df =\
+    df[['{}'.format(xlabel),'{}'.format(glabel),'{}'.format(tlabel),'{}'.format(cell_lab)]]
+    oldc = df['{}'.format(cell_lab)].iloc[0]
+    delta_div =\
+    (df.groupby('cell')['time_min'].first().values[1:]-df.groupby('cell')['time_min'].last().values[:-1])
+    i=0
+    for cel,Y in df.groupby('{}'.format(cell_lab)):
+        if cel==oldc: nm=m;nC=C
+        else:
+            # If cell division happen
+            nm,nC = division(nm,nC,sdx2,sdg2)
+        Y = df[['{}'.format(xlabel),'{}'.format(glabel),'{}'.format(tlabel)]].values
+        # COMPUTE LIKELIHOOD
+        if likelihood:
+            "LIK"
+            tmp=likelihood_posteriori_1cc_full(Y,nm,nC,ml,gl,sl2,mq,gq,sq2,b,sx2,sg2,False,True,nproc)
+            log_lik+=tmp[0]
+            nm,nC = tmp[1]
+        #COMPUTE POSTERIOR
+        if posterior:
+            tmp=likelihood_posteriori_1cc_full(Y,nm,nC,ml,gl,sl2,mq,gq,sq2,b,sx2,sg2,True,False,nproc)
+            print('po',tmp)
+            post.append(tmp[0])
+            nm,nC = tmp[1]
+        # NEXT TIME POINT PRIOR BEFORE DIVISION
+        dt = delta_div[i]
+        nm,nC = mean_cov_model(nm,nC,dt,ml,gl,sl2,mq,gq,sq2,b)
+    return post,log_lik
