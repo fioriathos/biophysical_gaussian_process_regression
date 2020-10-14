@@ -45,7 +45,7 @@ def cov_gg(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq
         (Exp(b*(-2*t + tau1))*mq*(bg + Cxg + Cgl*tau1) - Exp(-2*b*t + b*tau1 - gq*tau1)*mq*(bg + Cxg + Cgl*tau1) + \
           Exp(-2*b*t + b*tau1 - gq*tau1)*(Cgq + bg*(bq + Cxq + Clq*tau1) + (Cxg + Cgl*tau1)*(bq + Cxq + Clq*tau1)))
     def mean_gtz0_part2(tau1,tau2):
-        return Exp(2*bx + 2*Cxx - gq*(tau1 + tau2) + b*(-2*t + tau1 + tau2) + ((tau1 + tau2)*(2*bl + 4*Cxl + Cll*(tau1 + tau2)))/2.)*\
+        return Exp(2*bx+2*Cxx-gq*(tau1+tau2)+b*(-2*t + tau1 + tau2) + ((tau1 + tau2)*(2*bl + 4*Cxl + Cll*(tau1 + tau2)))/2.)*\
         (bq**2 + Cqq + (2*Cxq + (-1 + Exp(gq*tau1))*mq + Clq*(tau1 + tau2))*(2*Cxq + (-1 + Exp(gq*tau2))*mq + Clq*(tau1 + tau2)) + \
           bq*(4*Cxq + (-2 + Exp(gq*tau1) + Exp(gq*tau2))*mq + 2*Clq*(tau1 + tau2)))
     vgtz0 = dblquad(vargt_z0, 0, t, lambda x: 0, lambda x: t)[0]
@@ -415,7 +415,7 @@ def likelihood_posteriori_1cc_full(Y,m,C,ml,gl,sl2,mq,gq,sq2,b,sx2,sg2,posterior
         # We also return POSTm1 for next cell computation
         return LIK, POSTm1
 def full_likelihood_posterior(df,m,C,ml,gl,sl2,mq,gq,sq2,b,sx2,sg2,sdx2,sdg2,posterior\
-                          ,likelihood,nproc=4,xlabel='log_length_um',\
+                          ,likelihood,inf_points=5,nproc=4,xlabel='log_length_um',\
                           glabel='gfp_nb',tlabel='time_min',cell_lab='cell_id'):
     """Y[x,g,time,cellid] Y must be connected in genealogy, time ordered and
     maximun 1 division apart i.e. mother daugther relationship """
@@ -434,14 +434,12 @@ def full_likelihood_posterior(df,m,C,ml,gl,sl2,mq,gq,sq2,b,sx2,sg2,sdx2,sdg2,pos
         Y = df[['{}'.format(xlabel),'{}'.format(glabel),'{}'.format(tlabel)]].values
         # COMPUTE LIKELIHOOD
         if likelihood:
-            "LIK"
             tmp=likelihood_posteriori_1cc_full(Y,nm,nC,ml,gl,sl2,mq,gq,sq2,b,sx2,sg2,False,True,nproc)
             log_lik+=tmp[0]
             nm,nC = tmp[1]
         #COMPUTE POSTERIOR
         if posterior:
             tmp=likelihood_posteriori_1cc_full(Y,nm,nC,ml,gl,sl2,mq,gq,sq2,b,sx2,sg2,True,False,nproc)
-            print('po',tmp)
             post.append(tmp[0])
             nm,nC = tmp[1]
         # NEXT TIME POINT PRIOR BEFORE DIVISION
