@@ -2,12 +2,12 @@ import mean_and_cov_matrix as mc
 import scipy
 import numpy as np
 class maximize_likelihood(object):
-    def __init__(self,free,boundary,fixed={}):
+    def __init__(self,free,bounds,fixed={}):
         """These 3 dictionary fixed the free param, constrained param, boundary"""
         assert type(fixed)==dict
         assert type(free)==dict;assert free!={}
         self.fixed = fixed; self.free = free
-        self.boundary = boundary
+        self.bounds = bounds
         assert set(fixed.keys())|set((free.keys()))==\
 	set(('ml','gl','sl2','mq','gq','sq2','b','sx2','sg2','sdx2','sdg2'))
         # Fix them as model parameters
@@ -72,9 +72,10 @@ class maximize_likelihood(object):
         return np.array(x0)
     def objective(self,x0,Y,m,C):
         """Minus log lik"""
+        print(x0)
         x = self.rebuild_param(x0,**self.fixed)
         return -mc.posterior_likelihood(Y,m,C,*x,likelihood=True)
-    def minimize(self,Y,m,C):
+    def maximize(self,Y,m,C):
         """x0 start point, m&C mean and cov at time 0, Y[n,4] data"""
         x0 = self.initialize()
         return scipy.optimize.minimize(self.objective, x0, args=(Y,m,C),\
