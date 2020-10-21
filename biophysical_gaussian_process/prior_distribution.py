@@ -38,44 +38,38 @@ def cov_xl(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq
 def cov_xq(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b):
     return Clq*(1-Exp(-gl*t))*Exp(-gq*t)/gl+Cxq*Exp(-gq*t)
 def cov_gg(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b,nm):
-    def covqq(t1,t2):
-        return sq2/(2*gq)*(np.exp(-np.abs(t1-t2)*gq)-np.exp(-gq*(t1+t2)))
-    def vargt_z0(t1,t2):
-       return covqq(t1,t2)*Exp(2*bx+2*Cxx-2*b*t+(b+bl+2*Cxl)*(t1+t2)+(Cll*(t1+t2)**2)/2.)
-    def covqq_1(r,s):
-        return sq2/(2*gq)*(np.exp(-np.abs(s)*gq)-np.exp(-gq*(r)))
-    def vargt_z0_1(r,s):
-        return covqq_1(r,s)*Exp(2*bx+2*Cxx-2*b*t+(b+bl+2*Cxl)*(r)+(Cll*(r)**2)/2.)
+#    def covqq(t1,t2):
+#        return sq2/(2*gq)*(np.exp(-np.abs(t1-t2)*gq)-np.exp(-gq*(t1+t2)))
+#    def vargt_z0(t1,t2):
+#       return covqq(t1,t2)*Exp(2*bx+2*Cxx-2*b*t+(b+bl+2*Cxl)*(t1+t2)+(Cll*(t1+t2)**2)/2.)
+# Reparametrized and solve one integrals
+    def vgtz0_(r):
+        return Exp(2*bx+2*Cxx-2*b*t+(b+bl+2*Cxl)*(r)+(Cll*(r)**2)/2.)
     def mean_gtz0_part1(tau1):
         return  Exp(bx + (Cxx + tau1*(2*bl + 2*Cxl + Cll*tau1))/2.)*\
         (Exp(b*(-2*t + tau1))*mq*(bg + Cxg + Cgl*tau1) - Exp(-2*b*t + b*tau1 - gq*tau1)*mq*(bg + Cxg + Cgl*tau1) + \
           Exp(-2*b*t + b*tau1 - gq*tau1)*(Cgq + bg*(bq + Cxq + Clq*tau1) + (Cxg + Cgl*tau1)*(bq + Cxq + Clq*tau1)))
-    def mean_gtz0_part2(tau1,tau2):
-        return Exp(2*bx+2*Cxx-gq*(tau1+tau2)+b*(-2*t + tau1 + tau2) + ((tau1 + tau2)*(2*bl + 4*Cxl + Cll*(tau1 + tau2)))/2.)*\
-        (bq**2 + Cqq + (2*Cxq + (-1 + Exp(gq*tau1))*mq + Clq*(tau1 + tau2))*(2*Cxq + (-1 + Exp(gq*tau2))*mq + Clq*(tau1 + tau2)) + \
-          bq*(4*Cxq + (-2 + Exp(gq*tau1) + Exp(gq*tau2))*mq + 2*Clq*(tau1 + tau2)))
-    star = datetime.now()
-    vgtz0 = dblquad(vargt_z0, 0, t, lambda x: 0, lambda x: t)[0]
-    print('part1',datetime.now()-star)
-    print('int',vgtz0)
-##############
-    star = datetime.now()
-    vgtz0 = dblquad(vargt_z0_1, 0, 2*t, lambda x: -t, lambda x: t)[0]
-    print('part1',datetime.now()-star)
-    print('int',vgtz0)
-
-########
-    def vgtz0_(r):
-        return Exp(2*bx+2*Cxx-2*b*t+(b+bl+2*Cxl)*(r)+(Cll*(r)**2)/2.)
-    star = datetime.now()
-    vgtz__=2*(1-Exp(-t))*sl2/(2*gq)*quad( vgtz0_,0,2*t)[0]
-    print('part1 redone',datetime.now()-star)
-    print('int redone',vgtz__)
-#######
-    star = datetime.now()
+#    def mean_gtz0_part2(tau1,tau2):
+#        return Exp(2*bx+2*Cxx-gq*(tau1+tau2)+b*(-2*t + tau1 + tau2) + ((tau1 + tau2)*(2*bl + 4*Cxl + Cll*(tau1 + tau2)))/2.)*\
+#        (bq**2 + Cqq + (2*Cxq + (-1 + Exp(gq*tau1))*mq + Clq*(tau1 + tau2))*(2*Cxq + (-1 + Exp(gq*tau2))*mq + Clq*(tau1 + tau2)) + \
+#          bq*(4*Cxq + (-2 + Exp(gq*tau1) + Exp(gq*tau2))*mq + 2*Clq*(tau1 + tau2)))
+#reparametrized and solve one integral
+    def mean_gtz0_part_0t(r):
+        return Exp(2*bx + 2*Cxx + b*r + bl*r + 2*Cxl*r - gq*r + (Cll*r**2)/2. - 2*b*t)*\
+                (bq**2*r + Cqq*r + bq*((2*(-1 + Exp(gq*r))*mq)/gq + 2*r*(2*Cxq - mq + Clq*r)) +\
+                 (Exp(gq*r)*mq*(4*Cxq + 2*Clq*r + mq*(-2 + gq*r)) + (2*Cxq - mq + Clq*r)*(gq*r*(2*Cxq + Clq*r) - mq*(2 + gq*r)))/gq)
+    def mean_gtz0_part_t2t(r):
+        return  Exp(2*bx + 2*Cxx + b*r + bl*r + 2*Cxl*r - gq*r + (Cll*r**2)/2. - 2*b*t)*\
+                (-(bq**2*r) - Cqq*r + ((-2*Cxq + mq - Clq*r)*(2*Exp(gq*r)*mq - 2*Exp(2*gq*t)*mq + Exp(gq*t)*gq*(2*Cxq - mq + Clq*r)*(r - 2*t)) - \
+            Exp(gq*(r + t))*gq*mq**2*(r - 2*t))/(Exp(gq*t)*gq) + \
+	    (2*bq*(-(Exp(gq*(r - t))*mq) + Exp(gq*t)*mq - gq*(2*Cxq - mq + Clq*r)*(r - 2*t)))/gq + 2*bq**2*t + 2*Cqq*t)
+    vgtz0 = sq2/(2*gq)*(quad(lambda r:\
+                            ((1-Exp(-gq*r))/gq-r*Exp(-gq*r))*vgtz0_(r),0,t)[0]\
+            + quad(lambda r:\
+                   ((1-Exp(-gq*(2*t-r)))/gq-(2*t-r)*Exp(-gq*r))*vgtz0_(r),t,2*t)[0])
     m2gtz0 = (Cgg+bg**2)/Exp(2*b*t) +2*quad(mean_gtz0_part1, 0, t)[0] +\
-              dblquad(mean_gtz0_part2, 0, t, lambda x: 0, lambda x: t)[0]
-    print('part2',datetime.now()-star)
+              quad(mean_gtz0_part_0t, 0, t)[0]+\
+              quad(mean_gtz0_part_t2t, t, 2*t)[0]
     return vgtz0 +m2gtz0- nm[1,0]**2
 def cov_gl(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b,nm):
     return  (bg*bl + Cgl)/Exp((b + gl)*t) + (bg*ml)/Exp(b*t) - (bg*ml)/Exp((b + gl)*t) +\
