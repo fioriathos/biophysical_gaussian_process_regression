@@ -99,16 +99,16 @@ def mean_cov_model(m,C,t,ml,gl,sl2,mq,gq,sq2,b):
     #####################
     ######   Mean     ###
     #####################
-    start = datetime.now()
+#    start = datetime.now()
     nm[0,0] = mean_x(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b)
     nm[1,0] = mean_g(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b)
     nm[2,0] = mean_l(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b)
     nm[3,0] = mean_q(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b)
-    print("mean",datetime.now()-start)
+#    print("mean",datetime.now()-start)
     ####################
     ####### Cov ########
     ####################
-    start = datetime.now()
+#    start = datetime.now()
     nC[0,0] = cov_xx(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b)
     nC[0,1] = cov_xg(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b,nm)
     nC[0,2] = cov_xl(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b)
@@ -118,10 +118,10 @@ def mean_cov_model(m,C,t,ml,gl,sl2,mq,gq,sq2,b):
     nC[2,2] = cov_ll(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b)
     nC[2,3] = cov_lq(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b)
     nC[3,3] = cov_qq(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b)
-    print('cov',datetime.now()-start)
-    start = datetime.now()
+#    print('cov',datetime.now()-start)
+#    start = datetime.now()
     nC[1,1] = cov_gg(t,bx,bg,bl,bq,Cxx,Cxg,Cxl,Cxq,Cgg,Cgl,Cgq,Cll,Clq,Cqq,ml,gl,sl2,mq,gq,sq2,b,nm)
-    print('var',datetime.now()-start)
+#    print('var',datetime.now()-start)
     ####################
     #### return     ####
     ####################

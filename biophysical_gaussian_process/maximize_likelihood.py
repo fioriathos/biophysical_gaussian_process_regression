@@ -1,4 +1,6 @@
-import mean_and_cov_matrix as mc
+from scipy.optimize import fmin_l_bfgs_b
+from biophysical_gaussian_process.likelihood import total_likelihood as\
+total_likelihood
 import scipy
 import numpy as np
 class maximize_likelihood(object):
@@ -72,11 +74,14 @@ class maximize_likelihood(object):
         return np.array(x0)
     def objective(self,x0,Y,m,C):
         """Minus log lik"""
-        print(x0)
+        #print(x0)
         x = self.rebuild_param(x0,**self.fixed)
-        return -mc.posterior_likelihood(Y,m,C,*x,likelihood=True)
+        #return -mc.posterior_likelihood(Y,m,C,*x,likelihood=True)
+        return -total_likelihood(Y,m,C,*x)
     def maximize(self,Y,m,C):
         """x0 start point, m&C mean and cov at time 0, Y[n,4] data"""
         x0 = self.initialize()
-        return scipy.optimize.minimize(self.objective, x0, args=(Y,m,C),\
-                                       method='Powell', bounds=self.bounds)
+        #return scipy.optimize.minimize(self.objective, x0, args=(Y,m,C),\
+        #                               method='Powell', bounds=self.bounds)
+        return  fmin_l_bfgs_b(self.objective,x0,args=(Y,m,C),\
+                                         approx_grad=True,epsilon=1e-09,bounds=self.bounds)

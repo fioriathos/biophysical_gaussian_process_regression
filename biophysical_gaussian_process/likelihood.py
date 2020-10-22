@@ -38,31 +38,31 @@ def total_likelihood(Y,m,C,ml,gl,sl2,mq,gq,sq2,b,sx2,sg2,sdx2,sdg2):
     log_lik=0;grad=[]
     XG = Y[:,:2].astype('float64');T=Y[:,2:3].astype('float64');ID=Y[:,3:4]
     T = T-T[0,0];
-    start = datetime.now()
+#    start = datetime.now()
     for i in range(T.shape[0]):
         #Initial condition
         if i==0:
             nm=m;nC=C
         # Cell division
         if i!=0 and ID[i,0]!=ID[i-1,0]:
-            sta1 = datetime.now()
+#            sta1 = datetime.now()
             nm,nC = division(nm,nC,sdx2,sdg2)
-            print("div",datetime.now()-sta1)
+#            print("div",datetime.now()-sta1)
         # Measure
         y = XG[i:i+1,:].T
         # COMPUTE LIKELIHOOD
-        sta1 = datetime.now()
+#        sta1 = datetime.now()
         log_lik+=log_likelihood(y,nm,nC,sx2,sg2)
-        print('likelihood',datetime.now()-sta1)
+#        print('likelihood',datetime.now()-sta1)
         # COMPUTE POSTERIOR
-        sta1 = datetime.now()
+#        sta1 = datetime.now()
         nm,nC= posterior(y,nm,nC,sx2,sg2)
-        print('posterior',datetime.now()-sta1)
+#        print('posterior',datetime.now()-sta1)
         # NEXT TIME POINT PRIOR NO DIVISION
         if i<T.shape[0]-1:
             dt = T[i+1,0]-T[i,0]
             sta1=datetime.now()
             nm,nC = mean_cov_model(nm,nC,dt,ml,gl,sl2,mq,gq,sq2,b)
-            print('update',datetime.now()-sta1)
-    print('total time',datetime.now()-start)
+#            print('update',datetime.now()-sta1)
+#    print('total time',datetime.now()-start)
     return log_lik
