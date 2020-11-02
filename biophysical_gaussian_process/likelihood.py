@@ -32,12 +32,12 @@ def posterior(y,m,C,sx2,sg2):
     K = C[:2,:]
     y = y-m[:2,:]
     return m+K.T@Si@y, C-K.T@Si@K
-def total_likelihood(Y,m,C,ml,gl,sl2,mq,gq,sq2,b,sx2,sg2,sdx2,sdg2):
+def total_likelihood(Y,m,C,ml,gl,sl2,mq,gq,sq2,b,sx2,sg2,sdx2,sdg2,num=False):
     """Y=[x,g,time,cell_id] must be connected in genealogy, time ordered and
     maximun 1 division apart i.e. mother daugther relationship """
-    log_lik=0;grad=[]
+    log_lik=0
     XG = Y[:,:2].astype('float64');T=Y[:,2:3].astype('float64');ID=Y[:,3:4]
-    T = T-T[0,0];
+    T = T-T[0,0]
 #    start = datetime.now()
     for i in range(T.shape[0]):
         #Initial condition
@@ -61,8 +61,8 @@ def total_likelihood(Y,m,C,ml,gl,sl2,mq,gq,sq2,b,sx2,sg2,sdx2,sdg2):
         # NEXT TIME POINT PRIOR NO DIVISION
         if i<T.shape[0]-1:
             dt = T[i+1,0]-T[i,0]
-            sta1=datetime.now()
-            nm,nC = mean_cov_model(nm,nC,dt,ml,gl,sl2,mq,gq,sq2,b)
+            #sta1=datetime.now()
+            nm,nC = mean_cov_model(nm,nC,dt,ml,gl,sl2,mq,gq,sq2,b,num)
 #            print('update',datetime.now()-sta1)
 #    print('total time',datetime.now()-start)
     return log_lik
