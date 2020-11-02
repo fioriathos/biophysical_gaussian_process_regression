@@ -4,6 +4,7 @@ from numpy import pi as Pi
 from numpy import exp as Exp
 from datetime import datetime
 from biophysical_gaussian_process.prior_distribution import mean_cov_model as mean_cov_model
+from copy import deepcopy
 ##############################################################################
 #############################DIVISON, LIKELIHOOD AND POSTERIOR###############
 ##############################################################################
@@ -23,9 +24,10 @@ def division_backward(m,C,sdx2,sdg2):
     D = np.zeros((4,4))
     np.fill_diagonal(D,[sdx2,sdg2,0,0])
     return F@m+f, D+F@C@F.T
-def reverse_mean_covariance(m,C):
+def reverse_mean_covariance(nm,nC):
     """From the backward process reverse mean and covariance as if growth rate and q were positive"""
     minus = lambda x: -x
+    m = deepcopy(nm); C = deepcopy(nC)
     m[2,0],m[3,0],C[0,2],C[0,3],C[1,2],C[1,3]=list(map(minus,[m[2,0],m[3,0],C[0,2],C[0,3],C[1,2],C[1,3]]))
     return m,C
 def gaussinan_multiplication(m1,C1,m2,C2):
@@ -79,7 +81,7 @@ def prediction_backward(Y,m,C,ml,gl,sl2,mq,gq,sq2,b,sx2,sg2,sdx2,sdg2):
     mean=[]; covariance = []
     Y = Y[::-1] # reverse time order
     XG = Y[:,:2].astype('float64');T=Y[:,2:3].astype('float64');ID=Y[:,3:4]
-    T = abs(T-T[0,0])
+    T = T-T[0,0]
 #    start = datetime.now()
     for i in range(T.shape[0]):
         #Initial condition
@@ -94,14 +96,17 @@ def prediction_backward(Y,m,C,ml,gl,sl2,mq,gq,sq2,b,sx2,sg2,sdx2,sdg2):
         y = XG[i:i+1,:].T
         # COMPUTE POSTERIOR
 #        sta1 = datetime.now()
+        #print("observed point",y)
+        #print("prior",nm)
         nm,nC= posterior(y,nm,nC,sx2,sg2)
+        #print("posterior",nm)
         rnm,rnC = reverse_mean_covariance(nm,nC)
         mean.append(rnm)
         covariance.append(rnC)
 #        print('posterior',datetime.now()-sta1)
         # NEXT TIME POINT PRIOR NO DIVISION
         if i<T.shape[0]-1:
-            dt = T[i+1,0]-T[i,0]
+            dt = abs(T[i+1,0]-T[i,0])
            # sta1=datetime.now()
             nm,nC = mean_cov_model(nm,nC,dt,-ml,gl,sl2,-mq,gq,sq2,-b)
 #            print('update',datetime.now()-sta1)
