@@ -97,12 +97,12 @@ def prediction_backward(Y,m,C,ml,gl,sl2,mq,gq,sq2,b,sx2,sg2,sdx2,sdg2):
         # COMPUTE POSTERIOR
 #        sta1 = datetime.now()
         #print("observed point",y)
-        #print("prior",nm)
-        nm,nC= posterior(y,nm,nC,sx2,sg2)
-        #print("posterior",nm)
         rnm,rnC = reverse_mean_covariance(nm,nC)
         mean.append(rnm)
         covariance.append(rnC)
+       #print("prior",nm)
+        nm,nC= posterior(y,nm,nC,sx2,sg2)
+        #print("posterior",nm)
 #        print('posterior',datetime.now()-sta1)
         # NEXT TIME POINT PRIOR NO DIVISION
         if i<T.shape[0]-1:
