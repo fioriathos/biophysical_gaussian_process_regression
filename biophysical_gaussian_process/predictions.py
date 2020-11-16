@@ -76,8 +76,7 @@ def prediction_forward(Y,m,C,ml,gl,sl2,mq,gq,sq2,b,sx2,sg2,sdx2,sdg2):
 #    print('total time',datetime.now()-start)
     return mean,covariance
 def prediction_backward(Y,m,C,ml,gl,sl2,mq,gq,sq2,b,sx2,sg2,sdx2,sdg2):
-    """Y=[x,g,time,cell_id] must be connected in genealogy, time ordered and
-    maximun 1 division apart i.e. mother daugther relationship """
+    """Reverse time by taking negative ml and negative mq"""
     mean=[]; covariance = []
     Y = Y[::-1] # reverse time order
     XG = Y[:,:2].astype('float64');T=Y[:,2:3].astype('float64');ID=Y[:,3:4]
@@ -108,15 +107,15 @@ def prediction_backward(Y,m,C,ml,gl,sl2,mq,gq,sq2,b,sx2,sg2,sdx2,sdg2):
         if i<T.shape[0]-1:
             dt = abs(T[i+1,0]-T[i,0])
            # sta1=datetime.now()
-            nm,nC = mean_cov_model(nm,nC,dt,-ml,gl,sl2,-mq,gq,sq2,-b)
+            nm,nC = mean_cov_model(nm,nC,dt,-ml,-gl,sl2,-mq,-gq,sq2,-b)
 #            print('update',datetime.now()-sta1)
 #    print('total time',datetime.now()-start)
     return mean,covariance
 def prediction(Y,m0,C0,mT,CT,ml,gl,sl2,mq,gq,sq2,b,sx2,sg2,sdx2,sdg2):
     """The initial condition for the forward (m0,C0) and backward (mT,CT) algorithm are clearly different"""
     mean=[]; error=[]
-    fm,fC = prediction_forward(Y,mT,CT,ml,gl,sl2,mq,gq,sq2,b,sx2,sg2,sdx2,sdg2)
-    bm,bC = prediction_backward(Y,m0,C0,ml,gl,sl2,mq,gq,sq2,b,sx2,sg2,sdx2,sdg2)
+    fm,fC = prediction_forward(Y,m0,C0,ml,gl,sl2,mq,gq,sq2,b,sx2,sg2,sdx2,sdg2)
+    bm,bC = prediction_backward(Y,mT,CT,ml,gl,sl2,mq,gq,sq2,b,sx2,sg2,sdx2,sdg2)
     for k in range(len(fm)):
         m,C= gaussinan_multiplication(fm[k],fC[k],bm[-1-k],bC[-1-k])
         mean.append(m);error.append(np.sqrt(np.diag(C)))
